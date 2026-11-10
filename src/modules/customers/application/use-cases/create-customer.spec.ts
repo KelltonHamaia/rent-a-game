@@ -9,26 +9,28 @@ describe('Create customer usecase', () => {
       create: vi.fn<CustomerRepository['create']>(),
     }
 
-    const savedCustomer: Customer = {
-      id: '123',
-      name: 'Ana Souza',
-      email: 'ana@mail.com',
+    const rawCustomer = {
+      name: '  Teste nome ',
+      email: ' teste@Gmail.com ',
+      cpf: '123.456.789-09',
+    }
+
+    const normalizedCustomer = {
+      name: 'Teste nome',
+      email: 'teste@gmail.com',
       cpf: '12345678909',
+    }
+
+    const savedCustomer: Customer = {
+      ...normalizedCustomer,
+      id: '01a1c35f-9d8f-751d-9185-88174eb581aa',
     }
     customerRepository.create.mockResolvedValue(savedCustomer)
 
     const sut = createCustomerUsecase(customerRepository)
-    const output = await sut({
-      name: '  Teste nome ',
-      email: ' teste@Gmail.com ',
-      cpf: '123.456.789-09',
-    })
+    const output = await sut(rawCustomer)
 
-    expect(customerRepository.create).toHaveBeenCalledWith({
-      name: 'Teste nome',
-      email: 'teste@gmail.com',
-      cpf: '12345678909',
-    })
+    expect(customerRepository.create).toHaveBeenCalledWith(normalizedCustomer)
     expect(customerRepository.create).toHaveBeenCalledTimes(1)
     expect(output).toEqual(savedCustomer)
   })
