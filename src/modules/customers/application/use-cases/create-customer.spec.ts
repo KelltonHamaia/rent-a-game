@@ -2,7 +2,7 @@ import type { CustomerRepository } from '@/modules/customers/application/ports/r
 import { createCustomerUsecase } from '@/modules/customers/application/use-cases/create-customer.usecase.js'
 import type { Customer } from '@/modules/customers/domain/entities/customer.entity.js'
 import { CUSTOMER_ERRORS } from '@/modules/customers/domain/errors/customer-errors.js'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('Create customer usecase', () => {
   const customerRepository = {
@@ -15,7 +15,7 @@ describe('Create customer usecase', () => {
     vi.resetAllMocks()
   })
 
-  test('Should normalize and create a customer', async () => {
+  it('Should normalize and create a customer', async () => {
     const rawCustomer = {
       name: '  Teste nome ',
       email: ' teste@Gmail.com ',
@@ -47,7 +47,7 @@ describe('Create customer usecase', () => {
     expect(output.right).toEqual({ result: savedCustomer })
   })
 
-  test('Shoud return a Left Either if the CPF is already in use', async () => {
+  it('Should return a Left Either if the CPF is already in use', async () => {
     const invalidCPFCustomerDTO = {
       name: 'Teste nome',
       email: 'teste@gmail.com',
@@ -77,7 +77,7 @@ describe('Create customer usecase', () => {
     expect(customerRepository.create).not.toHaveBeenCalled()
   })
 
-  test('Should return a Left Either if the EMAIL is already in use', async () => {
+  it('Should return a Left Either if the EMAIL is already in use', async () => {
     const invalidCPFCustomerDTO = {
       name: 'Teste nome',
       email: 'teste@gmail.com',
