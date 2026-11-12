@@ -2,13 +2,13 @@ import type { CustomerRepository } from '@/modules/customers/application/ports/r
 import { createCustomerUsecase } from '@/modules/customers/application/use-cases/create-customer.usecase.js'
 import type { Customer } from '@/modules/customers/domain/entities/customer.entity.js'
 import { CUSTOMER_ERRORS } from '@/modules/customers/domain/errors/customer-errors.js'
-import { beforeEach } from 'node:test'
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 describe('Create customer usecase', () => {
   const customerRepository = {
     create: vi.fn<CustomerRepository['create']>(),
     findByCPF: vi.fn<CustomerRepository['findByCPF']>(),
+    findByEmail: vi.fn<CustomerRepository['findByEmail']>(),
   }
 
   beforeEach(() => {
@@ -38,13 +38,12 @@ describe('Create customer usecase', () => {
     const sut = createCustomerUsecase(customerRepository)
     const output = await sut(rawCustomer)
 
+    expect(customerRepository.findByCPF).toHaveBeenCalledTimes(1)
     expect(customerRepository.findByCPF).toHaveBeenCalledWith(
       normalizedCustomer.cpf,
     )
     expect(customerRepository.create).toHaveBeenCalledTimes(1)
-
     expect(customerRepository.create).toHaveBeenCalledWith(normalizedCustomer)
-    expect(customerRepository.create).toHaveBeenCalledTimes(1)
     expect(output.right).toEqual({ result: savedCustomer })
   })
 
@@ -59,14 +58,53 @@ describe('Create customer usecase', () => {
       ...invalidCPFCustomerDTO,
       id: '01a1c35f-9d8f-751d-9185-88174eb581aa',
     })
+
+    customerRepository.findByEmail.mockResolvedValue(null)
     const output = await sut(invalidCPFCustomerDTO)
 
     expect(output.right).toBeNull()
     expect(output.left).toEqual(CUSTOMER_ERRORS.CPF_ALREADY_IN_USE)
+    expect(customerRepository.findByCPF).toHaveBeenCalledTimes(1)
     expect(customerRepository.findByCPF).toHaveBeenCalledWith(
       invalidCPFCustomerDTO.cpf,
     )
+
+    expect(customerRepository.findByEmail).toHaveBeenCalledTimes(1)
+    expect(customerRepository.findByEmail).toHaveBeenCalledWith(
+      invalidCPFCustomerDTO.email,
+    )
+
+    expect(customerRepository.create).not.toHaveBeenCalled()
+  })
+
+  test('Should return a Left Either if the EMAIL is already in use', async () => {
+    const invalidCPFCustomerDTO = {
+      name: 'Teste nome',
+      email: 'teste@gmail.com',
+      cpf: '12345678909',
+    }
+
+    const sut = createCustomerUsecase(customerRepository)
+
+    customerRepository.findByCPF.mockResolvedValue(null)
+    customerRepository.findByEmail.mockResolvedValue({
+      ...invalidCPFCustomerDTO,
+      id: '01a1c35f-9d8f-751d-9185-88174eb581aa',
+    })
+
+    const output = await sut(invalidCPFCustomerDTO)
+
+    expect(output.right).toBeNull()
+    expect(output.left).toEqual(CUSTOMER_ERRORS.EMAIL_ALREADY_IN_USE)
+
+    expect(customerRepository.findByEmail).toHaveBeenCalledTimes(1)
+    expect(customerRepository.findByEmail).toHaveBeenCalledWith(
+      invalidCPFCustomerDTO.email,
+    )
     expect(customerRepository.findByCPF).toHaveBeenCalledTimes(1)
+    expect(customerRepository.findByCPF).toHaveBeenCalledWith(
+      invalidCPFCustomerDTO.cpf,
+    )
     expect(customerRepository.create).not.toHaveBeenCalled()
   })
 })

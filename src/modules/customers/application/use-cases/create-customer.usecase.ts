@@ -11,12 +11,18 @@ export const createCustomerUsecase = (
 ) => {
   return async (newCustomer: NewCustomer) => {
     const normalizedCustomer = normalizeNewCustomer(newCustomer)
-    const isCPFInUse = await customerRepository.findByCPF(
-      normalizedCustomer.cpf,
-    )
+
+    const [isCPFInUse, isEmailInUse] = await Promise.all([
+      customerRepository.findByCPF(normalizedCustomer.cpf),
+      customerRepository.findByEmail(normalizedCustomer.email),
+    ])
 
     if (isCPFInUse) {
       return Either.Left(CUSTOMER_ERRORS.CPF_ALREADY_IN_USE)
+    }
+
+    if (isEmailInUse) {
+      return Either.Left(CUSTOMER_ERRORS.EMAIL_ALREADY_IN_USE)
     }
 
     const result = await customerRepository.create(normalizedCustomer)

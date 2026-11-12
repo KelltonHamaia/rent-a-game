@@ -5,4 +5,8 @@ export const CUSTOMER_ERRORS = {
     code: 'CPF_ALREADY_IN_USE',
     message: 'CPF already in use.',
   },
+  EMAIL_ALREADY_IN_USE: {
+    code: 'EMAIL_ALREADY_IN_USE',
+    message: 'EMAIL already in use.',
+  },
 } satisfies Record<string, Left>
