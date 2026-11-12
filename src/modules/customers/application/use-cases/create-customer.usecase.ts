@@ -3,14 +3,23 @@ import {
   NewCustomer,
   normalizeNewCustomer,
 } from '@/modules/customers/domain/entities/customer.entity.js'
+import { CUSTOMER_ERRORS } from '@/modules/customers/domain/errors/customer-errors.js'
+import { Either } from '@/modules/shared/errors/Either.js'
 
 export const createCustomerUsecase = (
   customerRepository: CustomerRepository,
 ) => {
   return async (newCustomer: NewCustomer) => {
     const normalizedCustomer = normalizeNewCustomer(newCustomer)
-    const result = await customerRepository.create(normalizedCustomer)
+    const isCPFInUse = await customerRepository.findByCPF(
+      normalizedCustomer.cpf,
+    )
 
-    return result
+    if (isCPFInUse) {
+      return Either.Left(CUSTOMER_ERRORS.CPF_ALREADY_IN_USE)
+    }
+
+    const result = await customerRepository.create(normalizedCustomer)
+    return Either.Right(result)
   }
 }
