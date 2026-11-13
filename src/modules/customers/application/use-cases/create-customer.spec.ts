@@ -1,110 +1,93 @@
 import type { CustomerRepository } from '@/modules/customers/application/ports/repository/customer.repository.js'
 import { createCustomerUsecase } from '@/modules/customers/application/use-cases/create-customer.usecase.js'
-import type { Customer } from '@/modules/customers/domain/entities/customer.entity.js'
+import type {
+  Customer,
+  NewCustomer,
+} from '@/modules/customers/domain/entities/customer.entity.js'
 import { CUSTOMER_ERRORS } from '@/modules/customers/domain/errors/customer-errors.js'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 describe('Create customer usecase', () => {
-  const customerRepository = {
-    create: vi.fn<CustomerRepository['create']>(),
-    findByCPF: vi.fn<CustomerRepository['findByCPF']>(),
-    findByEmail: vi.fn<CustomerRepository['findByEmail']>(),
-  }
-
-  beforeEach(() => {
-    vi.resetAllMocks()
-  })
-
-  it('Should normalize and create a customer', async () => {
-    const rawCustomer = {
-      name: '  Teste nome ',
-      email: ' teste@Gmail.com ',
-      cpf: '123.456.789-09',
-    }
-
-    const normalizedCustomer = {
-      name: 'Teste nome',
-      email: 'teste@gmail.com',
-      cpf: '12345678909',
-    }
-
-    const savedCustomer: Customer = {
-      ...normalizedCustomer,
-      id: '01a1c35f-9d8f-751d-9185-88174eb581aa',
-    }
-    customerRepository.findByCPF.mockResolvedValue(null)
-    customerRepository.create.mockResolvedValue(savedCustomer)
+  const makeSut = () => {
+    const customerRepository = {
+      create: vi.fn<CustomerRepository['create']>(),
+      findByCPF: vi.fn<CustomerRepository['findByCPF']>().mockResolvedValue(null),
+      findByEmail: vi.fn<CustomerRepository['findByEmail']>().mockResolvedValue(null),
+    } satisfies CustomerRepository
 
     const sut = createCustomerUsecase(customerRepository)
-    const output = await sut(rawCustomer)
+    return { customerRepository, sut }
+  }
+
+  const unnormalizedCustomer: NewCustomer = {
+    name: '  some name',
+    email: 'email@Gmail.com ',
+    cpf: '123.123.123-12   ',
+  }
+
+  const normalizedCustomer: NewCustomer = {
+    name: 'some name',
+    email: 'email@gmail.com',
+    cpf: '12312312312',
+  }
+
+  const customer: Customer = {
+    id: '01a1c35f-9d8f-751d-9185-88174eb581aa',
+    ...normalizedCustomer,
+  }
+
+  it('Should normalize and create a customer', async () => {
+    const { customerRepository, sut } = makeSut()
+    customerRepository.create.mockResolvedValue(customer)
+
+    const output = await sut(unnormalizedCustomer)
+
+    expect(output.right).toEqual({ result: customer })
+    expect(output.left).toBeNull()
 
     expect(customerRepository.findByCPF).toHaveBeenCalledTimes(1)
-    expect(customerRepository.findByCPF).toHaveBeenCalledWith(
-      normalizedCustomer.cpf,
-    )
+    expect(customerRepository.findByCPF).toHaveBeenCalledWith(normalizedCustomer.cpf)
+
+    expect(customerRepository.findByEmail).toHaveBeenCalledTimes(1)
+    expect(customerRepository.findByEmail).toHaveBeenCalledWith(normalizedCustomer.email)
+
     expect(customerRepository.create).toHaveBeenCalledTimes(1)
     expect(customerRepository.create).toHaveBeenCalledWith(normalizedCustomer)
-    expect(output.right).toEqual({ result: savedCustomer })
   })
 
   it('Should return a Left Either if the CPF is already in use', async () => {
-    const invalidCPFCustomerDTO = {
-      name: 'Teste nome',
-      email: 'teste@gmail.com',
-      cpf: '12345678909',
-    }
-    const sut = createCustomerUsecase(customerRepository)
-    customerRepository.findByCPF.mockResolvedValue({
-      ...invalidCPFCustomerDTO,
-      id: '01a1c35f-9d8f-751d-9185-88174eb581aa',
-    })
+    const { customerRepository, sut } = makeSut()
+    customerRepository.findByCPF.mockResolvedValue(customer)
 
-    customerRepository.findByEmail.mockResolvedValue(null)
-    const output = await sut(invalidCPFCustomerDTO)
+    const output = await sut(normalizedCustomer)
 
     expect(output.right).toBeNull()
     expect(output.left).toEqual(CUSTOMER_ERRORS.CPF_ALREADY_IN_USE)
+
     expect(customerRepository.findByCPF).toHaveBeenCalledTimes(1)
-    expect(customerRepository.findByCPF).toHaveBeenCalledWith(
-      invalidCPFCustomerDTO.cpf,
-    )
+    expect(customerRepository.findByCPF).toHaveBeenCalledWith(normalizedCustomer.cpf)
 
     expect(customerRepository.findByEmail).toHaveBeenCalledTimes(1)
-    expect(customerRepository.findByEmail).toHaveBeenCalledWith(
-      invalidCPFCustomerDTO.email,
-    )
+    expect(customerRepository.findByEmail).toHaveBeenCalledWith(normalizedCustomer.email)
 
     expect(customerRepository.create).not.toHaveBeenCalled()
   })
 
   it('Should return a Left Either if the EMAIL is already in use', async () => {
-    const invalidCPFCustomerDTO = {
-      name: 'Teste nome',
-      email: 'teste@gmail.com',
-      cpf: '12345678909',
-    }
+    const { customerRepository, sut } = makeSut()
+    customerRepository.findByEmail.mockResolvedValue(customer)
 
-    const sut = createCustomerUsecase(customerRepository)
-
-    customerRepository.findByCPF.mockResolvedValue(null)
-    customerRepository.findByEmail.mockResolvedValue({
-      ...invalidCPFCustomerDTO,
-      id: '01a1c35f-9d8f-751d-9185-88174eb581aa',
-    })
-
-    const output = await sut(invalidCPFCustomerDTO)
+    const output = await sut(normalizedCustomer)
 
     expect(output.right).toBeNull()
     expect(output.left).toEqual(CUSTOMER_ERRORS.EMAIL_ALREADY_IN_USE)
 
     expect(customerRepository.findByEmail).toHaveBeenCalledTimes(1)
-    expect(customerRepository.findByEmail).toHaveBeenCalledWith(
-      invalidCPFCustomerDTO.email,
-    )
+    expect(customerRepository.findByEmail).toHaveBeenCalledWith(normalizedCustomer.email)
+
     expect(customerRepository.findByCPF).toHaveBeenCalledTimes(1)
-    expect(customerRepository.findByCPF).toHaveBeenCalledWith(
-      invalidCPFCustomerDTO.cpf,
-    )
+    expect(customerRepository.findByCPF).toHaveBeenCalledWith(normalizedCustomer.cpf)
+
     expect(customerRepository.create).not.toHaveBeenCalled()
   })
 })
