@@ -3,12 +3,10 @@ import {
   NewCustomer,
   normalizeNewCustomer,
 } from '@/modules/customers/domain/entities/customer.entity.js'
-import { CUSTOMER_ERRORS } from '@/modules/customers/domain/errors/customer-errors.js'
+import { CUSTOMER_ERRORS } from '@/modules/customers/domain/errors/customers-errors.js'
 import { Either } from '@/modules/shared/errors/Either.js'
 
-export const createCustomerUsecase = (
-  customerRepository: CustomerRepository,
-) => {
+export const createCustomerUsecase = (customerRepository: CustomerRepository) => {
   return async (newCustomer: NewCustomer) => {
     const normalizedCustomer = normalizeNewCustomer(newCustomer)
 

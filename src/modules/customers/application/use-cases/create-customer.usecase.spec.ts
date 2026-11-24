@@ -4,7 +4,7 @@ import type {
   Customer,
   NewCustomer,
 } from '@/modules/customers/domain/entities/customer.entity.js'
-import { CUSTOMER_ERRORS } from '@/modules/customers/domain/errors/customer-errors.js'
+import { CUSTOMER_ERRORS } from '@/modules/customers/domain/errors/customers-errors.js'
 import { describe, expect, it, vi } from 'vitest'
 
 describe('Create customer usecase', () => {
