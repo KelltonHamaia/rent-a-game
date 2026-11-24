@@ -4,12 +4,14 @@ import {
   Category,
   NewCategory,
 } from '@/modules/categories/domain/entities/category.entity.js'
+import { CATEGORIES_ERRORS } from '@/modules/categories/domain/errors/categories-errors.js'
 import { describe, expect, it, vi } from 'vitest'
 
 describe('Create category usecase', () => {
   const makeSut = () => {
     const categoryRepository = {
       create: vi.fn<CategoryRepository['create']>(),
+      findByName: vi.fn<CategoryRepository['findByName']>(),
     } satisfies CategoryRepository
 
     const sut = createCategoryUsecase(categoryRepository)
@@ -40,5 +42,20 @@ describe('Create category usecase', () => {
 
     expect(categoryRepository.create).toHaveBeenCalledWith(normalizedCategory)
     expect(categoryRepository.create).toHaveBeenCalledTimes(1)
+  })
+
+  it('Should return a Left Either if the category already exists', async () => {
+    const { categoryRepository, sut } = makeSut()
+    categoryRepository.findByName.mockResolvedValue(category)
+
+    const output = await sut(normalizedCategory)
+
+    expect(output.right).toBeNull()
+    expect(output.left).toEqual(CATEGORIES_ERRORS.CATEGORY_ALREADY_EXISTS)
+
+    expect(categoryRepository.findByName).toHaveBeenCalledTimes(1)
+    expect(categoryRepository.findByName).toHaveBeenCalledWith(normalizedCategory.name)
+
+    expect(categoryRepository.create).not.toHaveBeenCalled()
   })
 })
