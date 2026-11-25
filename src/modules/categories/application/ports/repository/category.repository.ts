@@ -6,4 +6,5 @@ import type {
 export type CategoryRepository = {
   create: (newCategory: NewCategory) => Promise<Category>
   findByName: (name: string) => Promise<Category | null>
+  update: (category: Category) => Promise<Category | null>
 }

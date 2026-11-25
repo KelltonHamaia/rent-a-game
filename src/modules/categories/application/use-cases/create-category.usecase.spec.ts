@@ -11,7 +11,8 @@ describe('Create category usecase', () => {
   const makeSut = () => {
     const categoryRepository = {
       create: vi.fn<CategoryRepository['create']>(),
-      findByName: vi.fn<CategoryRepository['findByName']>(),
+      findByName: vi.fn<CategoryRepository['findByName']>().mockResolvedValue(null),
+      update: vi.fn<CategoryRepository['update']>(),
     } satisfies CategoryRepository
 
     const sut = createCategoryUsecase(categoryRepository)
